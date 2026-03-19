@@ -166,61 +166,34 @@
             color: #888;
             margin-left: 5px;
         }
-     /* অ্যানিমেটেড অ্যাড বাটন স্টাইল */
-.ad-wrapper {
-    text-align: center;
-    margin: 20px 0;
-}
-
-/* ৭২৮x৯০ ব্যানারের জন্য রেসপনসিভ ফ্রেম */
-.banner-ad-wrapper {
-    width: 100%;
-    max-width: 100%; /* মোবাইলে পুরো স্ক্রিন জুড়ে থাকবে */
+    /* অ্যানিমেটেড স্মার্ট অ্যাড বাটন */
+.smart-ad-container {
+    width: 95%;
+    max-width: 580px;
     margin: 15px auto;
-    padding: 4px;
+    padding: 3px;
+    background: linear-gradient(90deg, #3498db, #9b59b6, #3498db);
+    background-size: 200%;
+    border-radius: 12px;
+    animation: gradient-move 3s linear infinite;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.smart-ad-btn {
     background: #111;
+    color: white;
+    padding: 12px;
     border-radius: 10px;
-    position: relative;
-    overflow: hidden; /* ব্যানার বাইরে যাবে না */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
-    animation: pulse-border 2s infinite;
+    text-align: center;
+    font-weight: bold;
+    display: block;
+    text-decoration: none;
+    transition: 0.3s;
 }
 
-.banner-ad-wrapper::before {
-    content: '';
-    position: absolute;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(#00ff55, #0055ff, #ff0055, #00ff55);
-    animation: rotate-border 4s linear infinite;
-}
-
-.banner-content-box {
-    position: relative;
-    background: #000;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    z-index: 2;
-    overflow-x: auto; /* যদি ব্যানার বেশি বড় হয় তবে ইউজার স্ক্রল করতে পারবে */
-    display: flex;
-    justify-content: center;
-    scrollbar-width: none; /* স্ক্রলবার লুকানোর জন্য */
-}
-
-.banner-content-box::-webkit-scrollbar { display: none; }
-
-@keyframes rotate-border {
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes pulse-border {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.01); }
-    100% { transform: scale(1); }
+@keyframes gradient-move {
+    0% { background-position: 0%; }
+    100% { background-position: 200%; }
 }
     </style>
 </head>
@@ -271,6 +244,11 @@
         </div>
         <div class="playlist" id="playlist" onwheel="handlePlaylistWheel(event)"></div>
     </div>
+  <div class="smart-ad-container" id="adContainer" style="display:none;">
+    <a href="#" id="dynamicLink" target="_blank" class="smart-ad-btn">
+        <span id="dynamicText">লোড হচ্ছে...</span>
+    </a>
+</div>
 <div class="banner-ad-wrapper">
     <div class="banner-content-box">
         <script type="text/javascript">
@@ -727,6 +705,17 @@
                 next.classList.add('image-active');
             }
         }, 4000);
+      // অ্যাডমিন প্যানেল থেকে অ্যাড আপডেট করা
+db.ref('adSettings').on('value', snap => {
+    const data = snap.val();
+    if(data && data.link) {
+        document.getElementById('adContainer').style.display = 'block';
+        document.getElementById('dynamicLink').href = data.link;
+        document.getElementById('dynamicText').innerText = data.text || "অফারটি দেখুন";
+    } else {
+        document.getElementById('adContainer').style.display = 'none';
+    }
+});
     </script>
 </body>
 </html>
