@@ -32,17 +32,16 @@
             display: flex; 
             gap: 12px; 
             overflow-x: auto; 
-            padding-bottom: 10px; 
-            scrollbar-width: thin; /* ফায়ারফক্সের জন্য */
-            scrollbar-color: #3498db #1a1a1a; /* ফায়ারফক্সের জন্য */
-            cursor: grab; /* ড্র্যাগ করার জন্য */
-            user-select: none; /* ড্র্যাগ করার সময় টেক্সট সিলেক্ট বন্ধ */
-            -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ স্ক্রল */
+            padding-bottom: 15px; 
+            scrollbar-width: thin;
+            scrollbar-color: #3498db #1a1a1a;
+            cursor: grab;
+            user-select: none;
+            -webkit-overflow-scrolling: touch;
         }
         
-        /* ওয়েবকিট ব্রাউজারের জন্য (ক্রোম, এজ, সাফারি) */
         .playlist::-webkit-scrollbar {
-            height: 5px; /* স্ক্রলবারের উচ্চতা */
+            height: 5px;
         }
         
         .playlist::-webkit-scrollbar-track {
@@ -60,7 +59,7 @@
         }
         
         .playlist:active {
-            cursor: grabbing; /* ড্র্যাগ করার সময় */
+            cursor: grabbing;
         }
         
         .video-card { 
@@ -71,7 +70,7 @@
             border: 1.5px solid #222; 
             cursor: pointer; 
             transition: 0.3s;
-            flex-shrink: 0; /* কার্ডগুলো সঙ্কুচিত না হওয়ার জন্য */
+            flex-shrink: 0;
         }
         
         .video-card:hover { 
@@ -83,7 +82,7 @@
             width: 100%; 
             height: 80px; 
             object-fit: cover; 
-            pointer-events: none; /* ড্র্যাগ করার সময় ইমেজ ড্র্যাগ হওয়া বন্ধ */
+            pointer-events: none;
         }
         
         .video-card p { 
@@ -91,7 +90,7 @@
             font-size: 11px; 
             text-align: center; 
             color: #bbb; 
-            pointer-events: none; /* ড্র্যাগ করার সময় টেক্সট ড্র্যাগ হওয়া বন্ধ */
+            pointer-events: none;
         }
         
         .video-card.active { 
@@ -121,13 +120,14 @@
             margin-left: 10px;
             cursor: pointer;
             transition: 0.3s;
+            white-space: nowrap;
         }
         
         .next-indicator:hover {
             opacity: 0.8;
         }
         
-        /* স্ক্রল বাটন - ডেস্কটপের জন্য */
+        /* স্ক্রল বাটন */
         .scroll-buttons {
             display: flex;
             gap: 5px;
@@ -156,8 +156,15 @@
         
         @media (max-width: 768px) {
             .scroll-buttons {
-                display: none; /* মোবাইলে বাটন লুকাবে */
+                display: none;
             }
+        }
+        
+        /* ভিডিও কাউন্টার */
+        .video-counter {
+            font-size: 12px;
+            color: #888;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -197,7 +204,7 @@
         </div>
 
         <div class="playlist-title">
-            <span>পরবর্তী ভিডিওগুলো</span>
+            <span>পরবর্তী ভিডিওগুলো <span id="videoCount" class="video-counter">(০/২০)</span></span>
             <div style="display: flex; align-items: center;">
                 <span class="next-indicator" id="nextIndicator" onclick="toggleAutoNext()">স্বয়ংক্রিয় পরবর্তী চালু</span>
                 <div class="scroll-buttons">
@@ -220,6 +227,7 @@
 
         // গ্লোবাল ভেরিয়েবল
         let videosList = [];
+        let videosObj = {}; // অরিজিনাল অবজেক্ট স্টোর করার জন্য
         let currentVideoIndex = 0;
         let player; // ইউটিউব প্লেয়ার অবজেক্ট
         let autoNextEnabled = true; // অটো নেক্সট চালু/বন্ধ
@@ -230,7 +238,7 @@
         window.onload = () => {
             loadContent();
             loadStats();
-            initDragScroll(); // ড্র্যাগ স্ক্রল ইনিশিয়ালাইজ
+            initDragScroll();
         };
 
         // ড্র্যাগ করে স্ক্রল করার ফাংশন
@@ -261,25 +269,20 @@
                 if (!isDragging) return;
                 e.preventDefault();
                 const x = e.pageX - playlist.offsetLeft;
-                const walk = (x - startX) * 2; // স্ক্রল স্পিড
+                const walk = (x - startX) * 2;
                 playlist.scrollLeft = scrollLeft - walk;
             });
         }
 
-        // মাউস হুইল দিয়ে স্ক্রল (ডেস্কটপের জন্য)
         function handlePlaylistWheel(event) {
             const playlist = document.getElementById('playlist');
-            // হুইল ডেল্টা ব্যবহার করে স্ক্রল
-            playlist.scrollLeft += event.deltaY * 2; // হুইল স্পিড
-            
-            // পৃষ্ঠা স্ক্রল না হওয়ার জন্য
+            playlist.scrollLeft += event.deltaY * 2;
             event.preventDefault();
         }
 
-        // স্ক্রল বাটন
         function scrollPlaylist(direction) {
             const playlist = document.getElementById('playlist');
-            const scrollAmount = 300; // কতটুকু স্ক্রল হবে
+            const scrollAmount = 300;
             
             if (direction === 'left') {
                 playlist.scrollLeft -= scrollAmount;
@@ -370,8 +373,7 @@
                 .then(() => {
                     if (navigator.vibrate) navigator.vibrate(50);
                 })
-                .catch((err) => {
-                    console.log("শেয়ার বাতিল বা এরর:", err);
+                .catch(() => {
                     copyToClipboard(shareUrl);
                 });
             } else {
@@ -445,33 +447,62 @@
         }
 
         function loadContent() {
-            // ভিডিও লোড
+            // ভিডিও লোড - এখন ২০টি সাপোর্ট করবে
             db.ref('videos').on('value', snap => {
-                const videos = snap.val() || {};
-                videosList = Object.values(videos);
+                videosObj = snap.val() || {};
+                
+                // ফিল্টার করে শুধু ভ্যালুগুলো নেওয়া (যেগুলো খালি নয়)
+                videosList = Object.values(videosObj).filter(url => url && url.trim() !== '');
+                
                 const list = document.getElementById('playlist');
                 list.innerHTML = '';
 
-                Object.keys(videos).forEach((key, i) => {
-                    const url = videos[key];
-                    const thumbUrl = getThumbnailUrl(url);
+                // ভিডিও কাউন্ট আপডেট
+                const totalVideos = Object.keys(videosObj).length;
+                const nonEmptyVideos = videosList.length;
+                document.getElementById('videoCount').innerText = `(${nonEmptyVideos}/${totalVideos})`;
 
+                // সবগুলো ভিডিও দেখানো (খালি থাকলেও কার্ড দেখাবে)
+                for(let i = 1; i <= 20; i++) {
+                    const key = 'vid' + i;
+                    const url = videosObj[key] || '';
+                    
+                    // যদি ইউআরএল খালি থাকে তাহলে ডিফল্ট ইমেজ দেখাবে
+                    let thumbUrl = url ? getThumbnailUrl(url) : "https://via.placeholder.com/140x80/111/333?text=খালি";
+                    let videoNumber = i;
+                    
                     const card = document.createElement('div');
                     card.className = 'video-card';
-                    card.onclick = () => playVideo(url, i + 1);
+                    card.setAttribute('data-video-index', i);
+                    
+                    // যদি ইউআরএল খালি না হয় তাহলে ক্লিক করলে প্লে হবে
+                    if (url) {
+                        card.onclick = () => playVideo(url, videoNumber);
+                    } else {
+                        card.onclick = () => alert('এই ভিডিওটি এখনও যোগ করা হয়নি');
+                        card.style.opacity = '0.6';
+                    }
+                    
                     card.innerHTML = `
                         <div style="position:relative;">
-                            <img src="${thumbUrl}" onerror="this.src='https://via.placeholder.com/140x80/000/3498db?text=Video+${i+1}'" draggable="false">
-                            <div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:white; font-size:10px; padding:2px 5px; border-radius:3px;">▶</div>
+                            <img src="${thumbUrl}" onerror="this.src='https://via.placeholder.com/140x80/000/3498db?text=Video+${i}'" draggable="false">
+                            <div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:white; font-size:10px; padding:2px 5px; border-radius:3px;">${url ? '▶' : '⏸'}</div>
                         </div>
-                        <p>ভিডিও ${i + 1}</p>
+                        <p>ভিডিও ${i} ${url ? '' : '(খালি)'}</p>
                     `;
                     list.appendChild(card);
-                });
+                }
 
-                // প্রথম ভিডিও অটো-প্লে
+                // প্রথম ভিডিও অটো-প্লে (যদি থাকে)
                 if (videosList.length > 0 && !document.getElementById('mainVideo').src) {
-                    playVideo(videosList[0], 1);
+                    // প্রথম নন-খালি ভিডিও খুঁজে বের করা
+                    for(let i = 1; i <= 20; i++) {
+                        const url = videosObj['vid' + i];
+                        if (url) {
+                            playVideo(url, i);
+                            break;
+                        }
+                    }
                 }
             });
 
@@ -481,7 +512,16 @@
                 const slider = document.getElementById('imageSlider');
                 slider.innerHTML = '';
                 
-                Object.values(imgs).forEach((url, i) => {
+                // ফিল্টার করে খালি ছবি বাদ দেওয়া
+                const validImages = Object.values(imgs).filter(url => url && url.trim() !== '');
+                
+                if (validImages.length === 0) {
+                    // যদি কোন ছবি না থাকে তাহলে ডিফল্ট দেখাবে
+                    slider.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; color:#666;">কোন ছবি নেই</div>';
+                    return;
+                }
+                
+                validImages.forEach((url, i) => {
                     let finalImageUrl = url;
 
                     if (url.includes('drive.google.com')) {
@@ -504,7 +544,6 @@
             });
         }
 
-        // ইউটিউব প্লেয়ার রেডি হলে কল হবে
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('mainVideo', {
                 events: {
@@ -513,7 +552,6 @@
             });
         }
 
-        // প্লেয়ার স্টেট চেঞ্জ হলে
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
                 console.log('ভিডিও শেষ, পরবর্তী চালানো হচ্ছে...');
@@ -523,21 +561,33 @@
             }
         }
 
-        // পরবর্তী ভিডিও চালান
         function playNextVideo() {
-            if (videosList.length > 0) {
-                let nextIndex = currentVideoIndex + 1;
+            // বর্তমান ভিডিওর পরের নন-খালি ভিডিও খুঁজে বের করা
+            let nextIndex = currentVideoIndex + 1;
+            let found = false;
+            
+            // ২০ বার পর্যন্ত চেক করা (কারণ সর্বোচ্চ ২০টি ভিডিও)
+            for(let i = 1; i <= 20; i++) {
+                let checkIndex = nextIndex;
+                if (checkIndex > 20) checkIndex = 1;
                 
-                if (nextIndex > videosList.length) {
-                    nextIndex = 1;
+                const url = videosObj['vid' + checkIndex];
+                if (url) {
+                    playVideo(url, checkIndex);
+                    showNotification('পরবর্তী ভিডিও চালানো হচ্ছে');
+                    found = true;
+                    break;
                 }
                 
-                playVideo(videosList[nextIndex - 1], nextIndex);
-                showNotification('পরবর্তী ভিডিও চালানো হচ্ছে');
+                nextIndex++;
+                if (nextIndex > 20) nextIndex = 1;
+            }
+            
+            if (!found) {
+                showNotification('কোন ভিডিও নেই');
             }
         }
 
-        // নোটিফিকেশন দেখান
         function showNotification(message) {
             const indicator = document.getElementById('nextIndicator');
             const originalText = indicator.innerText;
@@ -551,6 +601,8 @@
         }
 
         function playVideo(url, index) {
+            if (!url) return;
+            
             currentVideoIndex = index;
             const embedUrl = getEmbedUrl(url);
             
@@ -561,10 +613,10 @@
                 
                 // অ্যাক্টিভ ক্লাস আপডেট
                 document.querySelectorAll('.video-card').forEach((card, i) => {
-                    if (i + 1 === index) {
+                    const cardIndex = i + 1;
+                    if (cardIndex === index) {
                         card.classList.add('active');
                         
-                        // স্ক্রলে আনুন
                         card.scrollIntoView({ 
                             behavior: 'smooth', 
                             block: 'nearest', 
@@ -575,19 +627,15 @@
                     }
                 });
                 
-                // ইউটিউব প্লেয়ার আপডেট
                 if (player && player.loadVideoById) {
                     const vidId = url.match(/(?:v=|\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
                     if (vidId) {
                         player.loadVideoById(vidId[1]);
                     }
                 }
-            } else {
-                alert('ভিডিও লোড করা সম্ভব হয়নি!');
             }
         }
 
-        // অটো নেক্সট টগল
         function toggleAutoNext() {
             autoNextEnabled = !autoNextEnabled;
             const indicator = document.getElementById('nextIndicator');
@@ -600,12 +648,11 @@
             }
         }
 
-        // অটো স্লাইডার
         setInterval(() => {
             const active = document.querySelector('.image-slide.image-active');
             if (!active) return;
             
-            const next = active.nextElementSibling || document.querySelector('.image-slide');
+            const next = active.nextElementSibling || document.querySelector('.image-slide:first-child');
             if (next) {
                 active.classList.remove('image-active');
                 next.classList.add('image-active');
