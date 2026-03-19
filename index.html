@@ -153,6 +153,57 @@
     function doLike() { /* আপনার লাইক লজিক */ }
     function shareVideo() { /* আপনার শেয়ার লজিক */ }
     function openComment() { document.getElementById('commentBox').style.display = 'block'; }
+    // ১. কমেন্ট বক্স খোলা বা বন্ধ করার ফাংশন
+function openComment() {
+    const box = document.getElementById('commentBox');
+    // যদি বক্সটি লুকানো থাকে তবে দেখাবে, আর দেখানো থাকলে লুকিয়ে ফেলবে
+    if (box.style.display === "none" || box.style.display === "") {
+        box.style.display = "block";
+        loadComments(); // বক্স খোলার সাথে সাথে কমেন্টগুলো লোড হবে
+    } else {
+        box.style.display = "none";
+    }
+}
+
+// ২. ডাটাবেসে কমেন্ট পাঠানোর ফাংশন
+function sendComment() {
+    const input = document.getElementById('commentInput');
+    const text = input.value.trim();
+    
+    if (text !== "") {
+        // ফায়ারবেসে নতুন কমেন্ট পুশ করা
+        const newCommentRef = db.ref('comments').push();
+        newCommentRef.set({
+            text: text,
+            timestamp: Date.now()
+        }).then(() => {
+            input.value = ""; // ইনপুট বক্স খালি করা
+            // স্ট্যাটাস আপডেট (কমেন্ট সংখ্যা ১ বাড়ানো)
+            db.ref('stats/comments').transaction(c => (c || 0) + 1);
+        });
+    } else {
+        alert("আগে কিছু লিখুন বস!");
+    }
+}
+
+// ৩. ডাটাবেস থেকে কমেন্টগুলো এনে লিস্টে দেখানো
+function loadComments() {
+    db.ref('comments').orderByChild('timestamp').limitToLast(20).on('value', snap => {
+        const list = document.getElementById('commentList');
+        list.innerHTML = '';
+        snap.forEach(child => {
+            const data = child.val();
+            const div = document.createElement('div');
+            div.style.background = "#1a1a1a";
+            div.style.padding = "10px";
+            div.style.marginBottom = "5px";
+            div.style.borderRadius = "8px";
+            div.style.fontSize = "13px";
+            div.innerHTML = `<span style="color:#3498db;">👤 ইউজার:</span> ${data.text}`;
+            list.prepend(div); // নতুন কমেন্ট সবার উপরে থাকবে
+        });
+    });
+}
 </script>
 
 <script src="https://www.youtube.com/iframe_api"></script>
