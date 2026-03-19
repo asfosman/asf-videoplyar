@@ -14,7 +14,7 @@
         .image-slide { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; transition: 0.5s; }
         .image-active { display: block; }
         .video-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; border: 1px solid #333; position: relative; padding-bottom: 56.25%; height: 0; margin-top: 10px; }
-        .video-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .video-box #mainVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         .action-bar { display: flex; justify-content: space-around; padding: 15px 0; border-bottom: 1px solid #222; margin-bottom: 10px; }
         .action-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; touch-action: manipulation; }
         .action-icon { font-size: 20px; margin-bottom: 5px; }
@@ -32,8 +32,8 @@
 
 <div class="container">
     <div class="image-slider" id="imageSlider"></div>
-    <div class="video-box">
-        <iframe id="mainVideo" src="" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <div class="video-box" id="playerParent">
+        <div id="mainVideo"></div>
     </div>
     <h3 id="videoTitle" style="padding: 10px 5px; font-size: 16px;">লোড হচ্ছে...</h3>
     <div class="action-bar">
@@ -43,10 +43,6 @@
     </div>
     <div id="commentBox">
         <h4 style="color:#3498db; margin-bottom:10px; font-size:14px;">মন্তব্য লিখুন</h4>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="text" id="commentInput" placeholder="এখানে লিখুন..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #444; background:#000; color:white; outline:none;">
-            <button onclick="sendComment()" style="padding:10px 15px; background:#3498db; border:none; border-radius:8px; color:white; font-weight:bold;">পাঠান</button>
-        </div>
         <div id="commentList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#bbb;"></div>
     </div>
     <div class="playlist-title">পরবর্তী ভিডিওগুলো</div>
@@ -62,32 +58,50 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let allVideosData = [];
+    let currentVideoIndex = 0;
+    let player;
+
     window.onload = () => { loadContent(); loadStats(); };
 
+    function extractVideoID(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
     function playVideo(url, index) {
-        let embedUrl = "";
-        const origin = window.location.origin;
+        currentVideoIndex = index - 1; 
+        const vidId = extractVideoID(url);
 
-        if (url.includes('youtube.com') || url.includes('youtu.be')) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-            const match = url.match(regExp);
-            const vidId = (match && match[2].length === 11) ? match[2] : null;
-            if (vidId) {
-                // Added origin and enablejsapi for better compatibility
-                embedUrl = `https://www.youtube.com/embed/${vidId}?autoplay=1&rel=0&enablejsapi=1&origin=${origin}`;
+        if (vidId) {
+            if (player && typeof player.loadVideoById === 'function') {
+                player.loadVideoById(vidId);
+            } else {
+                player = new YT.Player('mainVideo', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: vidId,
+                    playerVars: { 'autoplay': 1, 'rel': 0, 'enablejsapi': 1 },
+                    events: { 'onStateChange': onPlayerStateChange }
+                });
             }
-        } else if (url.includes('drive.google.com')) {
-            const fileId = url.match(/\/d\/([^\/]+)/)?.[1] || url.match(/id=([^\&]+)/)?.[1];
-            if (fileId) embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        } else {
-            embedUrl = url;
-        }
-
-        const mainVideo = document.getElementById('mainVideo');
-        if (embedUrl) {
-            mainVideo.src = embedUrl;
             document.getElementById('videoTitle').innerText = `🎬 ভিডিও ${index} প্লে হচ্ছে`;
-            window.scrollTo({ top: mainVideo.offsetTop - 20, behavior: 'smooth' });
+        }
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.ENDED) {
+            playNextVideo();
+        }
+    }
+
+    function playNextVideo() {
+        let nextIndex = currentVideoIndex + 1;
+        if (nextIndex < allVideosData.length) {
+            playVideo(allVideosData[nextIndex], nextIndex + 1);
+        } else {
+            console.log("প্লেলিস্ট শেষ!");
         }
     }
 
@@ -96,102 +110,51 @@
             const videos = snap.val() || {};
             const list = document.getElementById('playlist');
             list.innerHTML = '';
+            allVideosData = Object.values(videos); 
+
             Object.keys(videos).forEach((key, i) => {
                 const url = videos[key];
-                let thumbUrl = "https://via.placeholder.com/140x80/111/333?text=Loading...";
-                if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                    const vidId = url.match(/(?:v=|\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-                    if (vidId) thumbUrl = `https://img.youtube.com/vi/${vidId[1]}/mqdefault.jpg`;
-                } else if (url.includes('drive.google.com')) {
-                    const fileId = url.match(/\/d\/([^\/]+)/)?.[1] || url.match(/id=([^\&]+)/)?.[1];
-                    if (fileId) thumbUrl = `https://drive.google.com/thumbnail?id=${fileId}`;
-                }
+                let thumbUrl = `https://img.youtube.com/vi/${extractVideoID(url)}/mqdefault.jpg`;
+                
                 const card = document.createElement('div');
                 card.className = 'video-card';
-                card.onclick = () => playVideo(url, i + 1); // Using onclick for better cross-device response
+                card.onclick = () => playVideo(url, i + 1);
                 card.innerHTML = `<div style="position:relative;"><img src="${thumbUrl}"><div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:white; font-size:10px; padding:2px 5px; border-radius:3px;">▶</div></div><p>ভিডিও ${i + 1}</p>`;
                 list.appendChild(card);
             });
-            if (Object.keys(videos).length > 0 && !document.getElementById('mainVideo').src) {
-                playVideo(Object.values(videos)[0], 1);
+
+            if (allVideosData.length > 0 && !player) {
+                // ইউটিউব এপিআই লোড হওয়ার জন্য একটু সময় দেওয়া
+                setTimeout(() => playVideo(allVideosData[0], 1), 1000);
             }
         });
-        // Slider and Stats functions remain same as your original code...
+
         db.ref('images').on('value', s => {
             const imgs = s.val() || {};
             const slider = document.getElementById('imageSlider');
             slider.innerHTML = '';
             Object.values(imgs).forEach((url, i) => {
-                let finalImg = url;
-                if (url.includes('drive.google.com')) {
-                    const fileId = url.match(/\/d\/([^\/]+)/)?.[1] || url.match(/id=([^\&]+)/)?.[1];
-                    if (fileId) finalImg = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
-                }
                 const imgTag = document.createElement('img');
-                imgTag.src = finalImg;
+                imgTag.src = url;
                 imgTag.className = `image-slide ${i === 0 ? 'image-active' : ''}`;
                 slider.appendChild(imgTag);
             });
         });
     }
 
-    // Interval, doLike, shareVideo, openComment, sendComment, loadComments (Keep your original logic)
     setInterval(() => {
         let active = document.querySelector('.image-slide.image-active');
         if(!active) return;
         let next = active.nextElementSibling || document.querySelector('.image-slide');
         active.classList.remove('image-active'); next.classList.add('image-active');
     }, 4000);
+
     function loadStats() { db.ref('stats').on('value', snap => { const data = snap.val() || {}; document.getElementById('likeCount').innerText = data.likes || 0; document.getElementById('commentCount').innerText = data.comments || 0; }); }
-    function doLike() { /* same */ }
-    function shareVideo() { /* same */ }
-    function openComment() { /* same */ }
-    function sendComment() { /* same */ }
-    function loadComments() { /* same */ }
-    var player;
-function onYouTubeIframeAPIReady() {
-    // এটি ইউটিউব এপিআই লোড হওয়ার পর কল হবে
-}
-
-function playVideo(url, index) {
-    window.currentVideoIndex = index; // বর্তমান ভিডিওর নম্বর সেভ রাখা
-    let vidId = extractVideoID(url);
-
-    if (vidId) {
-        if (player) {
-            player.loadVideoById(vidId);
-        } else {
-            player = new YT.Player('mainVideo', {
-                height: '100%',
-                width: '100%',
-                videoId: vidId,
-                playerVars: { 'autoplay': 1, 'rel': 0, 'enablejsapi': 1 },
-                events: {
-                    'onStateChange': onPlayerStateChange
-                }
-            });
-        }
-    }
-}
-
-// ভিডিও শেষ হলে এই ফাংশনটি কাজ করবে
-function onPlayerStateChange(event) {
-    if (event.data == YT.PlayerState.ENDED) {
-        playNextVideo();
-    }
-}
-
-function playNextVideo() {
-    let nextIndex = window.currentVideoIndex + 1;
-    // আপনার ভিডিও লিস্টের ডাটা চেক করে পরবর্তী ভিডিও লোড করা
-    let nextVideo = allVideosData[nextIndex]; 
-    if (nextVideo) {
-        playVideo(nextVideo.link, nextIndex);
-    } else {
-        console.log("প্লেলিস্ট শেষ!");
-    }
-}
+    function doLike() { /* আপনার লাইক লজিক */ }
+    function shareVideo() { /* আপনার শেয়ার লজিক */ }
+    function openComment() { document.getElementById('commentBox').style.display = 'block'; }
 </script>
-     <script src="https://www.youtube.com/iframe_api"></script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
