@@ -148,6 +148,50 @@
     function openComment() { /* same */ }
     function sendComment() { /* same */ }
     function loadComments() { /* same */ }
+    var player;
+function onYouTubeIframeAPIReady() {
+    // এটি ইউটিউব এপিআই লোড হওয়ার পর কল হবে
+}
+
+function playVideo(url, index) {
+    window.currentVideoIndex = index; // বর্তমান ভিডিওর নম্বর সেভ রাখা
+    let vidId = extractVideoID(url);
+
+    if (vidId) {
+        if (player) {
+            player.loadVideoById(vidId);
+        } else {
+            player = new YT.Player('mainVideo', {
+                height: '100%',
+                width: '100%',
+                videoId: vidId,
+                playerVars: { 'autoplay': 1, 'rel': 0, 'enablejsapi': 1 },
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+    }
+}
+
+// ভিডিও শেষ হলে এই ফাংশনটি কাজ করবে
+function onPlayerStateChange(event) {
+    if (event.data == YT.PlayerState.ENDED) {
+        playNextVideo();
+    }
+}
+
+function playNextVideo() {
+    let nextIndex = window.currentVideoIndex + 1;
+    // আপনার ভিডিও লিস্টের ডাটা চেক করে পরবর্তী ভিডিও লোড করা
+    let nextVideo = allVideosData[nextIndex]; 
+    if (nextVideo) {
+        playVideo(nextVideo.link, nextIndex);
+    } else {
+        console.log("প্লেলিস্ট শেষ!");
+    }
+}
 </script>
+     <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
