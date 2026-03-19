@@ -154,19 +154,28 @@
     }
 
     function doLike() {
-    const likeCountElem = document.getElementById('likeCount');
-    const likeIcon = document.getElementById('likeIcon');
-    
-    // ফায়ারবেসে সংখ্যা বাড়ানো
+    // চেক করা হচ্ছে এই ইউজার আগে লাইক দিয়েছে কি না
+    const hasLiked = localStorage.getItem('asf_liked');
+
+    if (hasLiked) {
+        alert("বস, আপনি তো অলরেডি একবার লাইক দিয়েছেন! ❤️");
+        return; // ফাংশন এখানেই থেমে যাবে, ডাটাবেসে আর যোগ হবে না
+    }
+
+    // যদি আগে লাইক না দিয়ে থাকে, তবে ডাটাবেসে ১ যোগ হবে
     db.ref('stats/likes').transaction((currentLikes) => {
         return (currentLikes || 0) + 1;
     });
 
-    // বাটনে ক্লিক করলে একটি সুন্দর এনিমেশন হবে
-    likeIcon.style.transform = "scale(1.5)";
-    likeIcon.style.transition = "0.2s";
+    // ব্রাউজারে সেভ করে রাখা যে সে লাইক দিয়েছে
+    localStorage.setItem('asf_liked', 'true');
+
+    // অ্যানিমেশন ইফেক্ট
+    const icon = document.getElementById('likeIcon');
+    icon.style.transform = "scale(1.4)";
+    icon.innerText = "💖"; // লাইক দিলে হার্ট আইকন চেঞ্জ হবে
     setTimeout(() => {
-        likeIcon.style.transform = "scale(1)";
+        icon.style.transform = "scale(1)";
     }, 200);
 }
 
