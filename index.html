@@ -166,6 +166,31 @@
             color: #888;
             margin-left: 5px;
         }
+      /* অ্যাড ব্যানার স্টাইল */
+.ad-container {
+    width: 100%;
+    margin: 15px 0;
+    text-align: center;
+}
+.ad-banner {
+    width: 100%;
+    max-width: 320px;
+    height: 50px;
+    background: linear-gradient(45deg, #3498db, #2ecc71);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+.ad-banner:active {
+    transform: scale(0.95);
+}
     </style>
 </head>
 <body>
@@ -215,7 +240,11 @@
         </div>
         <div class="playlist" id="playlist" onwheel="handlePlaylistWheel(event)"></div>
     </div>
-
+<div class="ad-container">
+    <a href="https://www.profitablecpmratenetwork.com/gh2kfhy1?key=a9bb172bf236ef11ded7d695303a6d29" target="_blank" class="ad-banner">
+        🎁 স্পেশাল অফার দেখতে এখানে টাচ করুন! 
+    </a>
+</div>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBqUasbhUNKBBmWLkPaSnvI3pA9IMLOUHo",
