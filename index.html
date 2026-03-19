@@ -166,34 +166,59 @@
             color: #888;
             margin-left: 5px;
         }
-    /* অ্যানিমেটেড স্মার্ট অ্যাড বাটন */
-.smart-ad-container {
-    width: 95%;
-    max-width: 580px;
-    margin: 15px auto;
-    padding: 3px;
-    background: linear-gradient(90deg, #3498db, #9b59b6, #3498db);
-    background-size: 200%;
-    border-radius: 12px;
-    animation: gradient-move 3s linear infinite;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-
-.smart-ad-btn {
-    background: #111;
-    color: white;
-    padding: 12px;
-    border-radius: 10px;
+     /* অ্যানিমেটেড অ্যাড বাটন স্টাইল */
+.ad-wrapper {
     text-align: center;
-    font-weight: bold;
-    display: block;
-    text-decoration: none;
-    transition: 0.3s;
+    margin: 20px 0;
 }
 
-@keyframes gradient-move {
+.animated-ad-btn {
+    position: relative;
+    display: inline-block;
+    padding: 12px 25px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #ff0055, #ffdd00, #00ff55, #0055ff);
+    background-size: 400%;
+    border-radius: 30px;
+    z-index: 1;
+    animation: glow-animation 8s linear infinite, pulse-animation 1.5s ease-in-out infinite;
+    border: none;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+    cursor: pointer;
+}
+
+/* ব্যাকগ্রাউন্ড কালার মুভিং অ্যানিমেশন */
+@keyframes glow-animation {
     0% { background-position: 0%; }
-    100% { background-position: 200%; }
+    100% { background-position: 400%; }
+}
+
+/* পালস (বড়-ছোট হওয়া) অ্যানিমেশন */
+@keyframes pulse-animation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* বাটনের নিচে শ্যাডো ইফেক্ট */
+.animated-ad-btn::before {
+    content: '';
+    position: absolute;
+    top: -5px; left: -5px; right: -5px; bottom: -5px;
+    z-index: -1;
+    background: inherit;
+    filter: blur(20px);
+    border-radius: 40px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.animated-ad-btn:hover::before {
+    opacity: 1;
 }
     </style>
 </head>
@@ -244,24 +269,10 @@
         </div>
         <div class="playlist" id="playlist" onwheel="handlePlaylistWheel(event)"></div>
     </div>
-  <div class="smart-ad-container" id="adContainer" style="display:none;">
-    <a href="#" id="dynamicLink" target="_blank" class="smart-ad-btn">
-        <span id="dynamicText">লোড হচ্ছে...</span>
+<div class="ad-wrapper">
+    <a href="https://www.profitablecpmratenetwork.com/gh2kfhy1?key=a9bb172bf236ef11ded7d695303a6d29" target="_blank" class="animated-ad-btn">
+        🔥 স্পেশাল অফার দেখুন! 🎁
     </a>
-</div>
-<div class="banner-ad-wrapper">
-    <div class="banner-content-box">
-        <script type="text/javascript">
-          atOptions = {
-            'key' : '1a754e3b12b8587386adc1a5c90611e7',
-            'format' : 'iframe',
-            'height' : 90,
-            'width' : 728,
-            'params' : {}
-          };
-        </script>
-        <script src="https://www.highperformanceformat.com/1a754e3b12b8587386adc1a5c90611e7/invoke.js"></script>
-    </div>
 </div>
     <script>
         const firebaseConfig = {
@@ -705,17 +716,6 @@
                 next.classList.add('image-active');
             }
         }, 4000);
-      // অ্যাডমিন প্যানেল থেকে অ্যাড আপডেট করা
-db.ref('adSettings').on('value', snap => {
-    const data = snap.val();
-    if(data && data.link) {
-        document.getElementById('adContainer').style.display = 'block';
-        document.getElementById('dynamicLink').href = data.link;
-        document.getElementById('dynamicText').innerText = data.text || "অফারটি দেখুন";
-    } else {
-        document.getElementById('adContainer').style.display = 'none';
-    }
-});
     </script>
 </body>
 </html>
