@@ -154,16 +154,21 @@
     }
 
     function doLike() {
-        db.ref('stats/likes').transaction(c => (c || 0) + 1);
-        const icon = document.getElementById('likeIcon');
-        icon.style.transform = "scale(1.4)";
-        setTimeout(() => icon.style.transform = "scale(1)", 200);
-    }
+    const likeCountElem = document.getElementById('likeCount');
+    const likeIcon = document.getElementById('likeIcon');
+    
+    // ফায়ারবেসে সংখ্যা বাড়ানো
+    db.ref('stats/likes').transaction((currentLikes) => {
+        return (currentLikes || 0) + 1;
+    });
 
-    function shareVideo() {
-        navigator.clipboard.writeText(window.location.href);
-        alert("লিঙ্ক কপি হয়েছে! বন্ধুদের পাঠান।");
-    }
+    // বাটনে ক্লিক করলে একটি সুন্দর এনিমেশন হবে
+    likeIcon.style.transform = "scale(1.5)";
+    likeIcon.style.transition = "0.2s";
+    setTimeout(() => {
+        likeIcon.style.transform = "scale(1)";
+    }, 200);
+}
 
     function openComment() {
         const box = document.getElementById('commentBox');
