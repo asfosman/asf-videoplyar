@@ -3,239 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ASF Player - Pro Interactive</title>
+    <title>ASF Player - Interactive</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #0a0a0a; font-family: 'Segoe UI', sans-serif; color: white; overflow-x: hidden; }
+        
         .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-        .image-slider { width: 100%; height: 180px; position: relative; overflow: hidden; border-radius: 15px; margin-bottom: 10px; background: #111; }
-        .image-slide { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; transition: 0.5s; }
-        .image-active { display: block; }
+        
+        /* ভিডিও বক্স */
         .video-box { width: 100%; border-radius: 15px; overflow: hidden; background: #000; border: 1px solid #333; position: relative; padding-bottom: 56.25%; height: 0; margin-top: 10px; }
-        .video-box #mainVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .video-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        /* লাইক, কমেন্ট, শেয়ার সেকশন */
         .action-bar { display: flex; justify-content: space-around; padding: 15px 0; border-bottom: 1px solid #222; margin-bottom: 10px; }
-        .action-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; touch-action: manipulation; }
+        .action-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; }
+        .action-item:active { transform: scale(0.9); }
         .action-icon { font-size: 20px; margin-bottom: 5px; }
         .action-count { font-size: 12px; color: #888; }
+        .active-like { color: #ff4757; }
+
+        /* প্লেলিস্ট */
         .playlist-title { font-size: 16px; margin: 15px 5px 10px; color: #3498db; }
         .playlist { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-        .video-card { min-width: 140px; background: #1a1a1a; border-radius: 12px; overflow: hidden; border: 1.5px solid #222; cursor: pointer; touch-action: manipulation; transition: 0.2s; }
-        .video-card:active { transform: scale(0.95); border-color: #3498db; }
-        .video-card img { width: 100%; height: 80px; object-fit: cover; pointer-events: none; }
-        .video-card p { padding: 8px; font-size: 11px; text-align: center; color: #bbb; pointer-events: none; }
-        #commentBox { display:none; background:#111; padding:15px; border-radius:15px; margin-top:10px; border:1px solid #333; }
-        .comment-input-area { display: flex; gap: 10px; margin-bottom: 15px; }
-        #commentInput { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #000; color: white; outline: none; }
-        .send-btn { padding: 10px 15px; background: #3498db; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+        .video-card { min-width: 140px; background: #1a1a1a; border-radius: 12px; overflow: hidden; border: 1.5px solid #222; cursor: pointer; }
+        .video-card img { width: 100%; height: 80px; object-fit: cover; }
+        .video-card p { padding: 8px; font-size: 11px; text-align: center; color: #bbb; }
+        .video-card.active { border-color: #3498db; background: #111; }
+
+        /* স্লাইডার */
+        .image-slider { width: 100%; height: 180px; position: relative; overflow: hidden; border-radius: 15px; margin-bottom: 10px; background: #111; }
+        .image-slide { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; }
+        .image-active { display: block; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="image-slider" id="imageSlider"></div>
-    <div class="video-box" id="playerParent">
-        <div id="mainVideo"></div>
-    </div>
-    <h3 id="videoTitle" style="padding: 10px 5px; font-size: 16px;">লোড হচ্ছে...</h3>
-    
-    <div class="action-bar">
-        <div class="action-item" onclick="doLike()"><span class="action-icon" id="likeIcon">❤️</span><span class="action-count" id="likeCount">0</span></div>
-        <div class="action-item" onclick="openComment()"><span class="action-icon">💬</span><span class="action-count" id="commentCount">0</span></div>
-        <div class="action-item" onclick="shareVideo()"><span class="action-icon">📤</span><span class="action-count">শেয়ার</span></div>
-    </div>
+    <div class="container">
+        <div class="image-slider" id="imageSlider"></div>
 
-    <div id="commentBox">
-        <h4 style="color:#3498db; margin-bottom:10px; font-size:14px;">মন্তব্য লিখুন</h4>
-        <div class="comment-input-area">
-            <input type="text" id="commentInput" placeholder="এখানে লিখুন...">
-            <button class="send-btn" onclick="sendComment()">পাঠান</button>
+        <div class="video-box">
+            <iframe id="mainVideo" src="" allowfullscreen></iframe>
         </div>
-        <div id="commentList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#bbb;"></div>
+
+        <h3 id="videoTitle" style="padding: 10px 5px; font-size: 16px;">লোড হচ্ছে...</h3>
+
+        <div class="action-bar">
+            <div class="action-item" onclick="doLike()">
+                <span class="action-icon" id="likeIcon">❤️</span>
+                <span class="action-count" id="likeCount">0</span>
+            </div>
+            <div class="action-item" onclick="toggleComment()">
+                <span class="action-icon">💬</span>
+                <span class="action-count" id="commentCount">0</span>
+            </div>
+            <div class="action-item" onclick="shareVideo()">
+                <span class="action-icon">📤</span> 
+                <span class="action-count">শেয়ার</span>
+            </div>
+        </div>
+
+        <div id="commentBox" style="display:none; background:#111; padding:15px; border-radius:15px; margin-top:10px; border:1px solid #333;">
+            <h4 style="color:#3498db; margin-bottom:10px; font-size:14px;">মন্তব্য লিখুন</h4>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="text" id="commentInput" placeholder="এখানে লিখুন..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #444; background:#000; color:white; outline:none;">
+                <button onclick="sendComment()" style="padding:10px 15px; background:#3498db; border:none; border-radius:8px; color:white; font-weight:bold;">পাঠান</button>
+            </div>
+            <div id="commentList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#bbb;"></div>
+        </div>
+
+        <div class="playlist-title">পরবর্তী ভিডিওগুলো</div>
+        <div class="playlist" id="playlist"></div>
     </div>
 
-    <div class="playlist-title">পরবর্তী ভিডিওগুলো</div>
-    <div class="playlist" id="playlist"></div>
-</div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqUasbhUNKBBmWLkPaSnvI3pA9IMLOUHo",
+            databaseURL: "https://video-pleyar-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "video-pleyar"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBqUasbhUNKBBmWLkPaSnvI3pA9IMLOUHo",
-        databaseURL: "https://video-pleyar-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "video-pleyar"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        // গ্লোবাল ভেরিয়েবল
+        let videosList = [];
+        let currentVideoIndex = 0;
 
-    let allVideosData = [];
-    let currentVideoIndex = 0;
-    let player;
+        window.onload = () => {
+            loadContent();
+            loadStats();
+        };
 
-    window.onload = () => { loadContent(); loadStats(); };
+        function loadStats() {
+            db.ref('stats').on('value', snap => {
+                const data = snap.val() || {};
+                document.getElementById('likeCount').innerText = data.likes || 0;
+                document.getElementById('commentCount').innerText = data.comments || 0;
+            });
+        }
 
-    function extractVideoID(url) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    }
+        function doLike() {
+            const likeIcon = document.getElementById('likeIcon');
+            let hasLiked = localStorage.getItem('asf_has_liked') === 'true';
 
-    function playVideo(url, index) {
-        currentVideoIndex = index - 1; 
-        const vidId = extractVideoID(url);
-        if (vidId) {
-            if (player && typeof player.loadVideoById === 'function') {
-                player.loadVideoById(vidId);
+            if (!hasLiked) {
+                db.ref('stats/likes').transaction(c => (c || 0) + 1);
+                localStorage.setItem('asf_has_liked', 'true');
+                likeIcon.innerText = "❤️"; 
+                likeIcon.style.transform = "scale(1.4)";
+                setTimeout(() => likeIcon.style.transform = "scale(1)", 200);
             } else {
-                player = new YT.Player('mainVideo', {
-                    height: '100%', width: '100%', videoId: vidId,
-                    playerVars: { 'autoplay': 1, 'rel': 0, 'enablejsapi': 1 },
-                    events: { 'onStateChange': onPlayerStateChange }
-                });
+                db.ref('stats/likes').transaction(c => (c > 0 ? c - 1 : 0));
+                localStorage.setItem('asf_has_liked', 'false');
+                likeIcon.innerText = "🤍"; 
+                likeIcon.style.transform = "scale(0.8)";
+                setTimeout(() => likeIcon.style.transform = "scale(1)", 200);
             }
-            document.getElementById('videoTitle').innerText = `🎬 ভিডিও ${index} প্লে হচ্ছে`;
         }
-    }
 
-    function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.ENDED) playNextVideo();
-    }
-
-    function playNextVideo() {
-        let nextIndex = currentVideoIndex + 1;
-        if (nextIndex < allVideosData.length) playVideo(allVideosData[nextIndex], nextIndex + 1);
-    }
-
-    function loadContent() {
-        db.ref('videos').on('value', snap => {
-            const videos = snap.val() || {};
-            const list = document.getElementById('playlist');
-            list.innerHTML = '';
-            allVideosData = Object.values(videos); 
-            Object.keys(videos).forEach((key, i) => {
-                const url = videos[key];
-                const vidId = extractVideoID(url);
-                let thumbUrl = vidId ? `https://img.youtube.com/vi/${vidId}/mqdefault.jpg` : "https://via.placeholder.com/140x80";
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.onclick = () => playVideo(url, i + 1);
-                card.innerHTML = `<div style="position:relative;"><img src="${thumbUrl}"><div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:white; font-size:10px; padding:2px 5px; border-radius:3px;">▶</div></div><p>ভিডিও ${i + 1}</p>`;
-                list.appendChild(card);
-            });
-            if (allVideosData.length > 0 && !player) setTimeout(() => playVideo(allVideosData[0], 1), 1000);
-        });
-
-        db.ref('images').on('value', s => {
-            const imgs = s.val() || {};
-            const slider = document.getElementById('imageSlider');
-            slider.innerHTML = '';
-            Object.values(imgs).forEach((url, i) => {
-                const imgTag = document.createElement('img');
-                imgTag.src = url;
-                imgTag.className = `image-slide ${i === 0 ? 'image-active' : ''}`;
-                slider.appendChild(imgTag);
-            });
-        });
-    }
-
-    setInterval(() => {
-        let active = document.querySelector('.image-slide.image-active');
-        if(!active) return;
-        let next = active.nextElementSibling || document.querySelector('.image-slide');
-        active.classList.remove('image-active'); next.classList.add('image-active');
-    }, 4000);
-
-    function loadStats() {
-        db.ref('stats').on('value', snap => {
-            const data = snap.val() || {};
-            document.getElementById('likeCount').innerText = data.likes || 0;
-            document.getElementById('commentCount').innerText = data.comments || 0;
-        });
-    }
-
-    // ১. লাইক ফাংশন (LocalStorage যুক্ত)
-function doLike() {
-    const hasLiked = localStorage.getItem('asf_liked');
-    if (hasLiked) {
-        alert("বস, আপনি তো অলরেডি একবার লাইক দিয়েছেন! ❤️");
-        return;
-    }
-
-    db.ref('stats/likes').transaction((currentLikes) => {
-        return (currentLikes || 0) + 1;
-    });
-
-    localStorage.setItem('asf_liked', 'true');
-    const icon = document.getElementById('likeIcon');
-    icon.style.transform = "scale(1.4)";
-    icon.innerText = "💖";
-    setTimeout(() => { icon.style.transform = "scale(1)"; }, 200);
-}
-
-// ২. শক্তিশালী শেয়ার ফাংশন (সবার উপরে ডিফাইন করা হলো যাতে আগে লোড হয়)
-window.shareVideo = function() {
-    const shareUrl = window.location.href;
-    const shareTitle = "ASF Player - চমৎকার ভিডিও দেখুন!";
-
-    if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        navigator.share({
-            title: shareTitle,
-            text: 'বস, এই ভিডিও প্লেয়ারটি দেখুন!',
-            url: shareUrl,
-        })
-        .then(() => console.log('Shared'))
-        .catch(() => copyToClipboard(shareUrl));
-    } else {
-        copyToClipboard(shareUrl);
-    }
-};
-
-// ৩. কপি টু ক্লিপবোর্ড
-function copyToClipboard(text) {
-    const input = document.createElement('textarea');
-    input.value = text;
-    input.style.position = 'fixed'; // স্ক্রিনের বাইরে রাখার জন্য
-    document.body.appendChild(input);
-    input.select();
-    input.setSelectionRange(0, 99999);
-    try {
-        document.execCommand('copy');
-        alert("লিঙ্ক কপি হয়েছে! বন্ধুদের পাঠান।");
-    } catch (err) {
-        alert("ম্যানুয়ালি কপি করুন: " + text);
-    }
-    document.body.removeChild(input);
-}
-    function openComment() {
-        const box = document.getElementById('commentBox');
-        box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
-        if(box.style.display === "block") loadComments();
-    }
-
-    function sendComment() {
-        const input = document.getElementById('commentInput');
-        const text = input.value.trim();
-        if (text !== "") {
-            db.ref('comments').push({ text: text, timestamp: Date.now() });
-            db.ref('stats/comments').transaction(c => (c || 0) + 1);
-            input.value = "";
+        function toggleComment() {
+            const box = document.getElementById('commentBox');
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            if(box.style.display === 'block') loadComments();
         }
-    }
 
-    function loadComments() {
-        db.ref('comments').orderByChild('timestamp').limitToLast(20).on('value', snap => {
-            const list = document.getElementById('commentList');
-            list.innerHTML = '';
-            snap.forEach(child => {
-                const div = document.createElement('div');
-                div.style.background = "#1a1a1a"; div.style.padding = "8px"; div.style.marginBottom = "5px"; div.style.borderRadius = "5px";
-                div.innerHTML = `<small style="color:#3498db;">👤 ইউজার:</small> ${child.val().text}`;
-                list.prepend(div);
+        function sendComment() {
+            const input = document.getElementById('commentInput');
+            const msg = input.value.trim();
+            
+            if(msg !== "") {
+                const newComment = {
+                    text: msg,
+                    time: new Date().toLocaleString('bn-BD')
+                };
+                
+                db.ref('all_comments').push(newComment);
+                db.ref('stats/comments').transaction(c => (c || 0) + 1);
+                
+                input.value = "";
+            } else {
+                alert("কিছু তো লিখুন বস!");
+            }
+        }
+
+        function loadComments() {
+            db.ref('all_comments').limitToLast(10).on('value', snap => {
+                const list = document.getElementById('commentList');
+                list.innerHTML = '';
+                const data = snap.val() || {};
+                
+                Object.values(data).reverse().forEach(c => {
+                    list.innerHTML += `
+                        <div style="background:#1a1a1a; padding:8px; border-radius:8px; margin-bottom:8px; border-left:3px solid #3498db;">
+                            <p style="color:white; margin-bottom:3px;">${c.text}</p>
+                            <small style="color:#666; font-size:10px;">${c.time}</small>
+                        </div>
+                    `;
+                });
             });
-        });
-    }
-    
-</script>
-<script src="https://www.youtube.com/iframe_api"></script>
+        }
+
+        function shareVideo() {
+            const videoTitle = document.getElementById('videoTitle').innerText;
+            const shareUrl = window.location.href;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'ASF Player',
+                    text: 'এই ভিডিওটি দেখুন: ' + videoTitle,
+                    url: shareUrl
+                })
+                .then(() => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                })
+                .catch((err) => {
+                    console.log("শেয়ার বাতিল বা এরর:", err);
+                    copyToClipboard(shareUrl);
+                });
+            } else {
+                copyToClipboard(shareUrl);
+            }
+        }
+
+        function copyToClipboard(text) {
+            const input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            
+            const btn = document.querySelector('.action-item:last-child span.action-count');
+            const originalText = btn.innerText;
+            btn.innerText = "লিঙ্ক কপি হয়েছে!";
+            btn.style.color = "#2ecc71";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.color = "#888";
+            }, 2000);
+        }
+
+        function getEmbedUrl(url) {
+            if (!url) return '';
+            
+            // গুগল ড্রাইভ
+            if (url.includes('drive.google.com')) {
+                let fileId = null;
+                
+                // বিভিন্ন ফরম্যাট থেকে ID বের করা
+                if (url.includes('/d/')) {
+                    fileId = url.split('/d/')[1]?.split('/')[0];
+                } else if (url.includes('id=')) {
+                    fileId = url.split('id=')[1]?.split('&')[0];
+                }
+                
+                if (fileId) {
+                    return `https://drive.google.com/file/d/${fileId}/preview`;
+                }
+            }
+            
+            // ইউটিউব
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                let vidId = url.match(/(?:v=|\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+                if (vidId) {
+                    return `https://www.youtube.com/embed/${vidId[1]}`;
+                }
+            }
+            
+            return url; // যদি অন্য কোনো লিঙ্ক হয়
+        }
+
+        function getThumbnailUrl(url) {
+            let thumbUrl = "https://via.placeholder.com/140x80/111/333?text=Video";
+            
+            // ইউটিউব থাম্বনেইল
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                const vidId = url.match(/(?:v=|\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+                if (vidId) {
+                    thumbUrl = `https://img.youtube.com/vi/${vidId[1]}/mqdefault.jpg`;
+                }
+            } 
+            // গুগল ড্রাইভ থাম্বনেইল
+            else if (url.includes('drive.google.com')) {
+                const fileId = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^\&]+)/);
+                if (fileId && fileId[1]) {
+                    thumbUrl = `https://drive.google.com/thumbnail?id=${fileId[1]}&sz=w400`;
+                }
+            }
+            
+            return thumbUrl;
+        }
+
+        function loadContent() {
+            // ভিডিও লোড
+            db.ref('videos').on('value', snap => {
+                const videos = snap.val() || {};
+                videosList = Object.values(videos);
+                const list = document.getElementById('playlist');
+                list.innerHTML = '';
+
+                Object.keys(videos).forEach((key, i) => {
+                    const url = videos[key];
+                    const thumbUrl = getThumbnailUrl(url);
+
+                    const card = document.createElement('div');
+                    card.className = 'video-card';
+                    card.onclick = () => playVideo(url, i + 1);
+                    card.innerHTML = `
+                        <div style="position:relative;">
+                            <img src="${thumbUrl}" onerror="this.src='https://via.placeholder.com/140x80/000/3498db?text=Video+${i+1}'">
+                            <div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:white; font-size:10px; padding:2px 5px; border-radius:3px;">▶</div>
+                        </div>
+                        <p>ভিডিও ${i + 1}</p>
+                    `;
+                    list.appendChild(card);
+                });
+
+                // প্রথম ভিডিও অটো-প্লে
+                if (videosList.length > 0 && !document.getElementById('mainVideo').src) {
+                    playVideo(videosList[0], 1);
+                }
+            });
+
+            // স্লাইডার ইমেজ লোড
+            db.ref('images').on('value', s => {
+                const imgs = s.val() || {};
+                const slider = document.getElementById('imageSlider');
+                slider.innerHTML = '';
+                
+                Object.values(imgs).forEach((url, i) => {
+                    let finalImageUrl = url;
+
+                    if (url.includes('drive.google.com')) {
+                        const fileId = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^\&]+)/);
+                        if (fileId && fileId[1]) {
+                            finalImageUrl = `https://drive.google.com/thumbnail?id=${fileId[1]}&sz=w800`;
+                        }
+                    }
+
+                    const imgTag = document.createElement('img');
+                    imgTag.src = finalImageUrl;
+                    imgTag.className = `image-slide ${i === 0 ? 'image-active' : ''}`;
+                    
+                    imgTag.onerror = function() {
+                        this.src = 'https://via.placeholder.com/800x400/111/3498db?text=Image+Error';
+                    };
+
+                    slider.appendChild(imgTag);
+                });
+            });
+        }
+
+        function playVideo(url, index) {
+            currentVideoIndex = index;
+            const embedUrl = getEmbedUrl(url);
+            
+            if (embedUrl) {
+                document.getElementById('mainVideo').src = embedUrl;
+                document.getElementById('videoTitle').innerText = `🎬 ভিডিও ${index} প্লে হচ্ছে`;
+                
+                // অ্যাক্টিভ ক্লাস আপডেট
+                document.querySelectorAll('.video-card').forEach((card, i) => {
+                    if (i + 1 === index) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+            } else {
+                alert('ভিডিও লোড করা সম্ভব হয়নি!');
+            }
+        }
+
+        // অটো স্লাইডার
+        setInterval(() => {
+            const active = document.querySelector('.image-slide.image-active');
+            if (!active) return;
+            
+            const next = active.nextElementSibling || document.querySelector('.image-slide');
+            if (next) {
+                active.classList.remove('image-active');
+                next.classList.add('image-active');
+            }
+        }, 4000);
+    </script>
 </body>
 </html>
