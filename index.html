@@ -207,6 +207,44 @@
             });
         });
     }
+    function shareVideo() {
+    const shareUrl = window.location.href; // আপনার সাইটের বর্তমান লিঙ্ক
+    const shareTitle = "ASF Player - চমৎকার ভিডিও দেখুন!";
+
+    // ১. যদি মোবাইল ব্রাউজার হয় (WhatsApp, FB শেয়ার অপশন আসবে)
+    if (navigator.share) {
+        navigator.share({
+            title: shareTitle,
+            text: 'বস, এই ভিডিও প্লেয়ারটি দেখুন, দারুণ সব ফিচার আছে!',
+            url: shareUrl,
+        })
+        .then(() => console.log('সফলভাবে শেয়ার হয়েছে'))
+        .catch((error) => {
+            console.log('শেয়ার করা যায়নি', error);
+            copyToClipboard(shareUrl); // শেয়ার ফেইল করলে লিঙ্ক কপি হবে
+        });
+    } else {
+        // ২. যদি কম্পিউটার বা পুরোনো ব্রাউজার হয় (লিঙ্ক কপি হবে)
+        copyToClipboard(shareUrl);
+    }
+}
+
+// লিঙ্ক কপি করার আলাদা শক্তিশালী ফাংশন
+function copyToClipboard(text) {
+    const input = document.createElement('textarea');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    input.setSelectionRange(0, 99999); // মোবাইলের জন্য
+
+    try {
+        document.execCommand('copy');
+        alert("লিঙ্কটি কপি করা হয়েছে! এখন পেস্ট করে বন্ধুদের পাঠান।");
+    } catch (err) {
+        alert("দুঃখিত, কপি করা যায়নি। লিঙ্কটি ম্যানুয়ালি কপি করুন: " + text);
+    }
+    document.body.removeChild(input);
+}
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
