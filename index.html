@@ -419,45 +419,53 @@
         }
 
         function shareVideo() {
-            const videoTitle = document.getElementById('videoTitle').innerText;
-            const shareUrl = window.location.href;
+    const videoTitle = document.getElementById('videoTitle').innerText;
+    const shareUrl = window.location.href;
+    const shareText = 'এই ভিডিওটি দেখুন: ' + videoTitle + '\n' + shareUrl;
 
-            if (navigator.share) {
-                navigator.share({
-                    title: 'ASF Player',
-                    text: 'এই ভিডিওটি দেখুন: ' + videoTitle,
-                    url: shareUrl
-                })
-                .then(() => {
-                    if (navigator.vibrate) navigator.vibrate(50);
-                })
-                .catch(() => {
-                    copyToClipboard(shareUrl);
-                });
-            } else {
-                copyToClipboard(shareUrl);
-            }
-        }
+    // ১. চেক করবে অ্যাপের (AndroidShare) ইন্টারফেস আছে কি না
+    if (window.AndroidShare) {
+        AndroidShare.share(shareText);
+        if (navigator.vibrate) navigator.vibrate(50);
+    } 
+    // ২. যদি ব্রাউজারে থাকে এবং navigator.share সাপোর্ট করে
+    else if (navigator.share) {
+        navigator.share({
+            title: 'ASF Player',
+            text: 'এই ভিডিওটি দেখুন: ' + videoTitle,
+            url: shareUrl
+        })
+        .then(() => {
+            if (navigator.vibrate) navigator.vibrate(50);
+        })
+        .catch(() => {
+            copyToClipboard(shareUrl);
+        });
+    } 
+    // ৩. কোনোটিই না থাকলে লিঙ্ক কপি করবে
+    else {
+        copyToClipboard(shareUrl);
+    }
+}
 
-        function copyToClipboard(text) {
-            const input = document.createElement('input');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            
-            const btn = document.querySelector('.action-item:last-child span.action-count');
-            const originalText = btn.innerText;
-            btn.innerText = "লিঙ্ক কপি হয়েছে!";
-            btn.style.color = "#2ecc71";
-            
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.color = "#888";
-            }, 2000);
-        }
-
+function copyToClipboard(text) {
+    const input = document.createElement('input');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    
+    const btn = document.querySelector('.action-item:last-child span.action-count');
+    const originalText = btn.innerText;
+    btn.innerText = "লিঙ্ক কপি হয়েছে!";
+    btn.style.color = "#2ecc71";
+    
+    setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.color = "#888";
+    }, 2000);
+}
         function getEmbedUrl(url) {
             if (!url) return '';
             
