@@ -418,26 +418,21 @@
             });
         }
 
-        function shareVideo() {
-            const videoTitle = document.getElementById('videoTitle').innerText;
-            const shareUrl = window.location.href;
+        <script>
+function shareFunction() {
+    var shareText = "দেখুন এই চমৎকার ভিডিওটি: " + window.location.href;
 
-            if (navigator.share) {
-                navigator.share({
-                    title: 'ASF Player',
-                    text: 'এই ভিডিওটি দেখুন: ' + videoTitle,
-                    url: shareUrl
-                })
-                .then(() => {
-                    if (navigator.vibrate) navigator.vibrate(50);
-                })
-                .catch(() => {
-                    copyToClipboard(shareUrl);
-                });
-            } else {
-                copyToClipboard(shareUrl);
-            }
-        }
+    // চেক করবে অ্যাপের ভেতর থেকে ওপেন হয়েছে কি না
+    if (window.AndroidShare) {
+        // অ্যাপের শেয়ার মেনু ওপেন করবে
+        AndroidShare.share(shareText);
+    } else {
+        // ব্রাউজারের ডিফল্ট শেয়ার বা কপি অপশন (যদি থাকে)
+        navigator.clipboard.writeText(shareText);
+        alert("Link Copied to Clipboard!");
+    }
+}
+</script>
 
         function copyToClipboard(text) {
             const input = document.createElement('input');
